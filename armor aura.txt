@@ -1,0 +1,57 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Variables = { ArmorBuy = false, Connections = {} }
+local ArmorNames = {}
+local HasNotified = false  -- Flag to track notification
+
+-- Function to find all armor models in the workspace
+local function GetArmorModels()
+    for _, v in next, workspace:GetDescendants() do
+        if v:IsA("Model") and v.Name:find("Armor") then
+            table.insert(ArmorNames, v)
+        end
+    end
+end
+
+-- Function to display notifications
+local function Notify(message)
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "Auto Buy Armor",
+        Text = message,
+        Duration = 0.9
+    })
+end
+
+-- Function to handle buying armor
+local function ArmorBuy(Value)
+    Variables.ArmorBuy = Value
+    if Variables.ArmorBuy then
+        Notify("Auto Buy Armor Enabled")
+        HasNotified = false  -- Reset notification flag
+        Variables.Connections.ArmorBuy = RunService.RenderStepped:Connect(function()
+            for _, v in pairs(ArmorNames) do
+                if LocalPlayer and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and
+                   (LocalPlayer.Character.HumanoidRootPart.Position - v.Head.Position).Magnitude <= 100 then  -- Increased range to 20
+                    fireclickdetector(v.ClickDetector)
+                    if not HasNotified then
+                        Notify("Armor Purchased")
+                        HasNotified = true
+                    end
+                    wait(0.25)
+                    break  -- Stop checking other armors once one is bought
+                end
+            end
+        end)
+    else
+        if Variables.Connections.ArmorBuy then
+            Variables.Connections.ArmorBuy:Disconnect()
+            Variables.Connections.ArmorBuy = nil
+        end
+        Notify("Auto Buy Armor Disabled")
+    end
+end
+
+-- Initialize the script
+GetArmorModels()
+ArmorBuy(true)  -- Change to 'false' to disable auto-buy by default
